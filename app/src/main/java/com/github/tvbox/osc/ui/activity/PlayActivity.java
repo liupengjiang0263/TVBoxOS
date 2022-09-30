@@ -169,7 +169,7 @@ public class PlayActivity extends BaseActivity {
             @Override
             public void playNext(boolean rmProgress) {
                 String preProgressKey = progressKey;
-                PlayActivity.this.playNext();
+                PlayActivity.this.playNext(rmProgress);
                 if (rmProgress && preProgressKey != null)
                     CacheManager.delete(MD5.string2MD5(preProgressKey), 0);
             }
@@ -718,7 +718,7 @@ public class PlayActivity extends BaseActivity {
     private String sourceKey;
     private SourceBean sourceBean;
 
-    private void playNext() {
+    private void playNext(boolean isProgress) {
         boolean hasNext = true;
         if (mVodInfo == null || mVodInfo.seriesMap.get(mVodInfo.playFlag) == null) {
             hasNext = false;
@@ -726,10 +726,15 @@ public class PlayActivity extends BaseActivity {
             hasNext = mVodInfo.playIndex + 1 < mVodInfo.seriesMap.get(mVodInfo.playFlag).size();
         }
         if (!hasNext) {
+            if(mVodInfo!=null && isProgress){
+                mVodInfo.playIndex=0;
+                Toast.makeText(this, "已经是最后一集了!,即将跳到第一集继续播放", Toast.LENGTH_SHORT).show();
+            }
             Toast.makeText(this, "已经是最后一集了!", Toast.LENGTH_SHORT).show();
             return;
+        }else {
+            mVodInfo.playIndex++;
         }
-        mVodInfo.playIndex++;
         play(false);
     }
 
@@ -770,8 +775,8 @@ public class PlayActivity extends BaseActivity {
 
         stopParse();
         if(mVideoView!=null) mVideoView.release();
-        String subtitleCacheKey = mVodInfo.sourceKey + "-" + mVodInfo.id + "-" + mVodInfo.playFlag + "-" + mVodInfo.playIndex + "-subt";
-        String progressKey = mVodInfo.sourceKey + mVodInfo.id + mVodInfo.playFlag + mVodInfo.playIndex;
+        String subtitleCacheKey = mVodInfo.sourceKey + "-" + mVodInfo.id + "-" + mVodInfo.playFlag + "-" + mVodInfo.playIndex+ "-" + vs.name + "-subt";
+        String progressKey = mVodInfo.sourceKey + mVodInfo.id + mVodInfo.playFlag + mVodInfo.playIndex + vs.name;
         //重新播放清除现有进度
         if (reset) {
             CacheManager.delete(MD5.string2MD5(progressKey), 0);
@@ -1216,6 +1221,9 @@ public class PlayActivity extends BaseActivity {
 
     boolean checkVideoFormat(String url) {
         if (sourceBean.getType() == 3) {
+            if (url.contains("=http") || url.contains(".html")) {
+                return false;
+            }
             Spider sp = ApiConfig.get().getCSP(sourceBean);
             if (sp != null && sp.manualVideoCheck())
                 return sp.isVideoFormat(url);
@@ -1368,7 +1376,6 @@ public class PlayActivity extends BaseActivity {
                     } else {
                         playUrl(url, null);
                     }
-                    mController.setUrlTitle("视频地址："+url);
                     stopLoadWebView(false);
                 }
             }
@@ -1382,9 +1389,9 @@ public class PlayActivity extends BaseActivity {
         @Override
         public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
             WebResourceResponse response = checkIsVideo(url, null);
-            if (response == null)
-                return super.shouldInterceptRequest(view, url);
-            else
+//            if (response == null)
+//                return super.shouldInterceptRequest(view, url);
+//            else
                 return response;
         }
 
@@ -1412,9 +1419,9 @@ public class PlayActivity extends BaseActivity {
 
             }
             WebResourceResponse response = checkIsVideo(url, webHeaders);
-            if (response == null)
-                return super.shouldInterceptRequest(view, request);
-            else
+//            if (response == null)
+//                return super.shouldInterceptRequest(view, request);
+//            else
                 return response;
         }
 
@@ -1554,7 +1561,6 @@ public class PlayActivity extends BaseActivity {
                     } else {
                         playUrl(url, null);
                     }
-                    mController.setUrlTitle("视频地址："+url);
                     stopLoadWebView(false);
                 }
             }
